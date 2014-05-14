@@ -143,14 +143,13 @@ class ImageRestController extends ERestController
     public function doRestCreate($data)
     {
 
-        /*       dumpvar($data);
-             dumpvar($_POST);exit;*/
-
         $isUpdate = (!empty($_POST['id'])) ? true : false;
 
         if (isset($_POST)) {
-            $collections = explode(',', $_POST['collections']);
-            $collections_are_empty = empty($_POST['collections']);
+        	$collections_are_empty = empty($_POST['collections']);
+        	if(!$collections_are_empty){
+        		$collections = explode(',', $_POST['collections']);
+        	} 
             if ($isUpdate) array_shift($collections); //workaround a select2 bug which sets the first selected item as  an unwanted [object Object]
 
             if ($isUpdate) {
