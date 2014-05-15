@@ -116,8 +116,8 @@ class ERestController extends Controller
 		Yii::app()->onException = array($this, 'onException'); //Register Custom Exception
 		//For requests from JS check that a user is loged in and call validateUser
 		//validateUser can/should be overridden in your controller.
-
-		if(!Yii::app()->user->isGuest && $this->validateAjaxUser($this->action->id)) 
+		
+		if(!Yii::app()->user->isGuest && $this->validateAjaxUser($this->action->id) || $this->action->id == "restList") 
 			$c->run(); 
 		else 
 		{
