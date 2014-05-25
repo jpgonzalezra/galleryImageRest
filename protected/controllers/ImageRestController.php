@@ -15,18 +15,21 @@ class ImageRestController extends ERestController {
 		$this->_attachBehaviors ( $this->model );
 		return $this->model;
 	}
-	
 	public function accessRules() {
-		$restAccessRules = array(
-			array(
-				'allow',	// allow all users to perform 'index' and 'view' actions
-				'actions'=>array('imageRest'),
-				'users'=>array('*'),
-			)
+		$restAccessRules = array (
+				array (
+						'allow', // allow all users to perform 'index' and 'view' actions
+						'actions' => array (
+								'imageRest' 
+						),
+						'users' => array (
+								'*' 
+						) 
+				) 
 		);
-
-		if(method_exists($this, '_accessRules'))
-			return CMap::mergeArray($restAccessRules, $this->_accessRules());
+		
+		if (method_exists ( $this, '_accessRules' ))
+			return CMap::mergeArray ( $restAccessRules, $this->_accessRules () );
 		else
 			return $restAccessRules;
 	}
@@ -132,69 +135,36 @@ class ImageRestController extends ERestController {
 		}
 	}
 	public function doRestCreate($data) {
+		$collections = array();
+		if (! empty ( $data ['collections'] )) {
+			$collections = explode ( ',', $data ['collections'] );
+		}
 		
-		$isUpdate = (! empty ( $_POST ['id'] )) ? true : false;
+		$model = new Image ();
+		$model->attributes = $data;
+		$model->collections = $collections;
 		
-		if (isset ( $_POST )) {
-			$collections_are_empty = empty ( $data['collections'] );
-			if (! $collections_are_empty) {
-				$collections = explode ( ',', $data['collections'] );
-			}
-			if ($isUpdate)
-				array_shift ( $collections ); // workaround a select2 bug which sets the first selected item as an unwanted [object Object]
+		if (! $model->save ()) {
 			
-			if ($isUpdate) {
-				$model = $this->loadOneModel ( $_POST ['id'] );
-			} else
-				$model = new Image ();
-				
-				// delete old image if we are updating
-			if ($isUpdate && ! empty ( $_POST ['image'] )) {
-				@unlink ( $model->getFullImageFolderPath () . $model->getImageName ( 'full' ) );
-				@unlink ( $model->getThumbImageFolderPath () . $model->getImageName ( 'thumb' ) );
-			}
-			
-			$model->attributes = (! empty ( $_POST )) ? $_POST : $data;
-			
-			$model->image = CUploadedFile::getInstanceByName ( 'image' );
-			
-			if (isset ( $model->image )) {
-				$model->img_name = slugify ( file_ext_strip ( $model->image->name ) );
-				$model->img_size = $model->image->size;
-				$model->img_ext = $model->image->extensionName;
-			}
-			
-			if (! $collections_are_empty)
-				$model->collections = $collections;
-			else {
-				
-				$model->collections = array ();
-			}
-			// additional afterSave logic in Model file
-			if ($model->save ()) {
-				
-				header ( 'success', true, 200 );
-				echo json_encode ( array (
-						'data' => array (
-								'success' => true,
-								strtolower ( get_class ( $model ) ) => $model->attributes,
-								'collections' => $model->collections 
-						) 
-				) );
-				exit ();
-			} else {
-				header ( 'error', true, 400 );
-				$errors = $model->getErrors ();
-				echo json_encode ( array (
-						
-						'success' => false,
-						'message' => $errors,
-						'errorCode' => '400' 
-				) );
-				exit ();
-			}
-		} else
-			throw new CHttpException ( 400, 'Invalid request. Please do not repeat this request again.' );
+			header ( 'error', true, 400 );
+			$errors = $model->getErrors ();
+			echo json_encode ( array (
+					
+					'success' => false,
+					'message' => $errors,
+					'errorCode' => '400' 
+			) );
+			exit ();
+		}
+		header ( 'success', true, 200 );
+		echo json_encode ( array (
+				'data' => array (
+						'success' => true,
+						strtolower ( get_class ( $model ) ) => $model->attributes,
+						'collections' => $model->collections 
+				) 
+		) );
+		exit ();
 	}
 	public function onException($event) {
 		if (! $this->developmentFlag && ($event->exception->statusCode == 500 || is_null ( $event->exception->statusCode )))
